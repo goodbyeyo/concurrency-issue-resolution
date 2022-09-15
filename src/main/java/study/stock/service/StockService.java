@@ -2,6 +2,7 @@ package study.stock.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import study.stock.domain.Stock;
 import study.stock.repository.StockRepository;
 
@@ -11,10 +12,9 @@ public class StockService {
 
     private final StockRepository stockRepository;
 
-    public void decrease(Long id, Long quantity) {
-        // 1. 재고 가져와서
-        // 2. 수량 감소
-        // 3. DB 저장
+    // @Transactional
+    public synchronized void decrease(Long id, Long quantity) {
+
         Stock stock = stockRepository.findById(id).orElseThrow();
         stock.decrease(quantity);
         stockRepository.saveAndFlush(stock);
