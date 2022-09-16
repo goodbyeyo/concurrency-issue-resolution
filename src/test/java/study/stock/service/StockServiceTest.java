@@ -22,16 +22,19 @@ class StockServiceTest {
     private StockService stockService;
 
     @Autowired
+    private PessimisticLockStockService pessimisticLockStockService;
+
+    @Autowired
     private StockRepository stockRepository;
 
     @BeforeEach
-    public void before() {
+    public void insert() {
         Stock stock = new Stock(1L, 100L);
         stockRepository.saveAndFlush(stock);
     }
 
     @AfterEach
-    public void after() {
+    public void delete() {
         stockRepository.deleteAll();
     }
 
@@ -63,9 +66,7 @@ class StockServiceTest {
             });
         }
         latch.await();
-
         Stock stock = stockRepository.findById(1L).orElseThrow();
-
         // 기대 : 100 - (1*100) = 0
         assertEquals(0, stock.getQuantity());
 
@@ -77,6 +78,25 @@ class StockServiceTest {
         // -> 트랜잭션 종료시점에 db update 실행하는데 그전에 다른 thread 가 db 접근하는 경우 동시성 이슈 발생
         // -> @Transactional 어노테이션 제거하고 synchronized 예약어만 추가하고 실행
         //      -> 테스트 성공
+    }
 
+    @Test
+    public void 동시에_100개_요청_pessimisticLock_이용() throws InterruptedException {
+        int threadCount = 100;
+        ExecutorService executorService = Executors.newFixedThreadPool(32);
+        CountDownLatch latch = new CountDownLatch(threadCount);
+
+        for (int i = 0; i < threadCount; i++) {
+            executorService.submit(() -> {
+                try{
+                    pessimisticLockStockService.decrease(1L, 1L);
+                }finally {
+                    latch.countDown();
+                }
+            });
+        }
+        latch.await();
+        Stock stock = stockRepository.findById(1L).orElseThrow();
+        assertEquals(0, stock.getQuantity());
     }
 }
