@@ -7,8 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import study.stock.domain.Stock;
 import study.stock.repository.StockRepository;
-import study.stock.service.PessimisticLockStockService;
-import study.stock.service.StockService;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -17,10 +15,9 @@ import java.util.concurrent.Executors;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-class OptimisticLockStockFacadeTest {
-
+class NamedLockStockFacadeTest {
     @Autowired
-    private OptimisticLockStockFacade optimisticLockStockFacade;
+    private NamedLockStockFacade namedLockStockFacade;
 
     @Autowired
     private StockRepository stockRepository;
@@ -38,7 +35,7 @@ class OptimisticLockStockFacadeTest {
 
 
     @Test
-    public void 동시에_100개_요청_with_optimisticLock() throws InterruptedException {
+    public void 동시에_100개_요청_with_NamedLock() throws InterruptedException {
         int threadCount = 100;
         // Excutors Service -> 비동기 실행하는 작업을 단순화하여 사용할수있게 도와주는 자바 API
         ExecutorService executorService = Executors.newFixedThreadPool(32);
@@ -50,9 +47,7 @@ class OptimisticLockStockFacadeTest {
         for (int i = 0; i < threadCount; i++) {
             executorService.submit(() -> {
                 try{
-                    optimisticLockStockFacade.decrease(1L, 1L);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+                    namedLockStockFacade.decrease(1L, 1L);
                 } finally {
                     latch.countDown();
                 }
